@@ -117,7 +117,6 @@ public class FrontControllerServlet extends HttpServlet {
         String requestMappingPath = substringAfter(requestURI,
                 StringUtils.replace(prefixPath, "//", "/"));
         // 映射到 Controller
-        System.out.println("request path:" + requestMappingPath);
 
         int actionStartIndex = requestMappingPath.indexOf("/",1);
         if(actionStartIndex == -1)
@@ -143,7 +142,6 @@ public class FrontControllerServlet extends HttpServlet {
                         PageController pageController = PageController.class.cast(controller);
                         Method method = handlerMethodInfo.getHandlerMethod();
                         String viewPath = (String)method.invoke(pageController, request, response);
-                        System.out.println("path1:" + viewPath);
 
                         // 页面请求 forward
                         // request -> RequestDispatcher forward
@@ -153,7 +151,6 @@ public class FrontControllerServlet extends HttpServlet {
                         ServletContext servletContext = request.getServletContext();
                         if (!viewPath.startsWith("/")) {
                             viewPath = "/" + viewPath;
-                            System.out.println("path2:" + viewPath);
 
                         }
                         RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(viewPath);
@@ -165,7 +162,6 @@ public class FrontControllerServlet extends HttpServlet {
 
                 }
             } catch (Throwable throwable) {
-                System.out.println(throwable.getMessage());
                 if (throwable.getCause() instanceof IOException) {
                     throw (IOException) throwable.getCause();
                 } else {

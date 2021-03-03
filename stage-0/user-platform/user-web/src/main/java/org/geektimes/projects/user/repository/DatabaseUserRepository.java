@@ -41,6 +41,10 @@ public class DatabaseUserRepository implements UserRepository {
         return dbConnectionManager.getConnection();
     }
 
+    public boolean insert(User user){
+        return 1 == executeExecute(INSERT_USER_DML_SQL,
+                 COMMON_EXCEPTION_HANDLER, user.getName(), user.getPassword(), user.getEmail(), user.getPhoneNumber());
+    }
     @Override
     public boolean save(User user) {
         return false;
@@ -110,9 +114,11 @@ public class DatabaseUserRepository implements UserRepository {
     protected <T> T executeQuery(String sql, ThrowableFunction<ResultSet, T> function,
                                  Consumer<Throwable> exceptionHandler, Object... args) {
         Connection connection = getConnection();
+        int i = 0;
         try {
+
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            for (int i = 0; i < args.length; i++) {
+            for (i = 0; i < args.length; i++) {
                 Object arg = args[i];
                 Class argType = arg.getClass();
 
@@ -124,19 +130,52 @@ public class DatabaseUserRepository implements UserRepository {
 
                 // Boolean -> boolean
                 String methodName = preparedStatementMethodMappings.get(argType);
-                Method method = PreparedStatement.class.getMethod(methodName, wrapperType);
-                method.invoke(preparedStatement, i + 1, args);
+                System.out.println("i:" + String.valueOf(i) + " name:" + methodName + " wrapper:" + wrapperType.getName());
+                Method method = PreparedStatement.class.getMethod(methodName, int.class, wrapperType);
+                method.invoke(preparedStatement, i + 1, arg);
             }
             ResultSet resultSet = preparedStatement.executeQuery();
             // 返回一个 POJO List -> ResultSet -> POJO List
             // ResultSet -> T
             return function.apply(resultSet);
         } catch (Throwable e) {
+
+            e.printStackTrace();
             exceptionHandler.accept(e);
         }
         return null;
     }
 
+    protected int executeExecute(String sql,
+                                 Consumer<Throwable> exceptionHandler, Object... args) {
+        Connection connection = getConnection();
+        int i = 0;
+        try {
+
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            for (i = 0; i < args.length; i++) {
+                Object arg = args[i];
+                Class argType = arg.getClass();
+
+                Class wrapperType = wrapperToPrimitive(argType);
+
+                if (wrapperType == null) {
+                    wrapperType = argType;
+                }
+
+                // Boolean -> boolean
+                String methodName = preparedStatementMethodMappings.get(argType);
+                Method method = PreparedStatement.class.getMethod(methodName, int.class, wrapperType);
+                method.invoke(preparedStatement, i + 1, arg);
+            }
+            return preparedStatement.executeUpdate();
+        } catch (Throwable e) {
+
+            e.printStackTrace();
+            exceptionHandler.accept(e);
+        }
+        return 0;
+    }
 
     private static String mapColumnLabel(String fieldName) {
         return fieldName;
